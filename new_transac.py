@@ -1,5 +1,9 @@
 import ecdsa
 from ecdsa.util import sigdecode_der
+from ecdsa.keys import VerifyingKey
+from ecdsa.curves import SECP256k1
+from ecdsa import der
+
 
 def validate_scripts(locking_script, unlocking_script, public_key_hash, signature, public_key):
     """
@@ -40,14 +44,37 @@ def validate_scripts(locking_script, unlocking_script, public_key_hash, signatur
     return True
 
 def verify_signature(signature, public_key, public_key_hash):
-    # Convert the signature from DER format to (r, s) tuple
-    sig = sigdecode_der(signature[1:])
+    # Ensure signature length is reasonable
+    if len(signature) < 8:
+        return False
+    
+    try:
+        # Decode the DER-encoded signature
+        sig = sigdecode_der(signature, SECP256k1.order)
+        # Ensure the signature consists of two integers (r, s)
+        if len(sig) != 2:
+            print(1)
+            return False
+    except der.UnexpectedDER:
+        # Invalid DER encoding
+        print(2)
+        return False
 
     # Load the public key from its bytes representation
-    vk = ecdsa.VerifyingKey.from_string(public_key, curve=ecdsa.SECP256k1)
+    try:
+        vk = VerifyingKey.from_string(public_key, curve=SECP256k1)
+    except ecdsa.keys.BadSignatureError:
+        # Invalid public key format
+        print(3)
+        return False
 
     # Verify the signature
-    return vk.verify(sig, public_key_hash, sigdecode=ecdsa.util.sigdecode_der)
+    try:
+        return vk.verify(sig, public_key_hash, sigdecode=ecdsa.util.sigdecode_der)
+    except ecdsa.keys.BadSignatureError:
+        # Signature verification failed
+        print(4)
+        return False
 
 def create_unlocking_script(signature, public_key):
     """
