@@ -1,9 +1,5 @@
 import ecdsa
 import hashlib
-from ecdsa.util import sigdecode_der
-from ecdsa.keys import VerifyingKey
-from ecdsa.curves import SECP256k1
-from ecdsa import der
 import base64
 
 def validate_signature(public_key, signature, message):
@@ -106,6 +102,7 @@ def validate_script(locking_script, unlocking_script, message):
                 # print(4)
                 return False
         elif opcode == 0xac:  # OP_CHECKSIG
+            # print(stack)
             if len(stack) < 2:
                 # print(5)
                 return False
@@ -171,6 +168,7 @@ def create_locking_script(public_key_hash):
     # OP_CHECKSIG (0xac): Verifies the signature of the input data
 
     locking_script = bytes.fromhex(f"76a914{public_key_hash.hex()}88ac")
+    # print("lo:", locking_script)
     return locking_script
 
 
