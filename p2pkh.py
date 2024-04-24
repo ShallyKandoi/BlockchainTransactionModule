@@ -3,6 +3,26 @@ import hashlib
 import base64
 from custom_hash_func import hash
 
+# Create a message to sign
+message = b"Hello, world!"
+
+def generate_key_pair():
+    """Generates a private key, signs a message, and returns the signature and public key hash."""
+    # Generate a private key
+    private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
+
+    # Get the corresponding public key
+    public_key = private_key.verifying_key.to_string()
+
+    # Sign the message
+    signature = private_key.sign(message)
+
+    # Generate the public key hash
+    public_key_hash = generate_public_key_hash(str(public_key))
+
+    return private_key, public_key, signature, public_key_hash
+
+
 def validate_signature(public_key, signature, message):
     """Verifies if the signature is correct. This is used to prove
     it's you (and not someone else) trying to do a transaction with your
@@ -58,7 +78,7 @@ def parse_unlocking_script(unlocking_script):
 
 def validate_script(locking_script, unlocking_script, message):
     parsed_components = parse_locking_script(locking_script)
-    print(parsed_components)
+    print("\nParsed components from locking_script: ", parsed_components)
 
     signature, public_key = parse_unlocking_script(unlocking_script)
     # print("Signature:", signature.hex())
@@ -90,11 +110,11 @@ def validate_script(locking_script, unlocking_script, message):
             ripemd160_hash = hashlib.new('ripemd160', hash_item.encode('utf-8')).digest()
             stack.append(ripemd160_hash)
             # print("Hashed item pushed:",ripemd160_hash.hex())
+
             # hash_item = hashlib.new('ripemd160', hashlib.sha256(item).digest()).digest()
             # stack.append(hash_item)
         elif opcode == 0x14:  # Push 20 bytes (OP_PUSHDATA1)
             # Extract next 20 bytes as public key hash
-            # public_key_hash = locking_script[i:i + 20].hex()
             public_key_hash = locking_script[i:i + 20]
             stack.append(public_key_hash)
             i += 20
@@ -174,51 +194,40 @@ def create_locking_script(public_key_hash):
     # OP_CHECKSIG (0xac): Verifies the signature of the input data
 
     locking_script = bytes.fromhex(f"76a914{public_key_hash.hex()}88ac")
-    # print("lo:", locking_script)
     return locking_script
 
 
 def generate_public_key_hash(public_key):
     # Step 2: Hash the public key (SHA-256 followed by RIPEMD-160)
     # Use hashlib.new with 'ripemd160' to hash the byte representation
+
     # sha256_hash = hashlib.sha256(public_key).digest()
     # ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
+
     custom_hash_output = hash(public_key)
     ripemd160_hash = hashlib.new('ripemd160', custom_hash_output.encode('utf-8')).digest()
     return ripemd160_hash
 
 
-# Generate a private key
-private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
+def main():
+    private_key, public_key, signature, public_key_hash = generate_key_pair()
 
-# Get the corresponding public key
-public_key = private_key.verifying_key.to_string()
+    # Print the signature and public key
+    print("Private Key:", private_key.to_string().hex())
+    print("Signature:", signature.hex())
+    print("Public Key:", public_key.hex())
+    print("Public Key Hash:", public_key_hash.hex())
 
-# Create a message to sign
-message = b"Hello, world!"
+    locking_script = create_locking_script(public_key_hash)
+    print("\nLocking Script: ", locking_script.hex())
+    # print(len(locking_script))
 
-# Sign the message
-signature = private_key.sign(message)
+    unlocking_script = create_unlocking_script(signature, public_key)
+    print("Unlocking Script: ", unlocking_script.hex())
 
-public_key_hash= generate_public_key_hash(str(public_key))
+    # Validate the scripts
+    valid = validate_script(locking_script, unlocking_script, message)
+    print("\nScript is valid:", valid)
 
-# Print the signature and public key
-print("Signature:", signature.hex())
-print("Public Key:", public_key.hex())
-print("Public Key Hash:", public_key_hash.hex())
-
-# Call the validate_signature function
-# print(validate_signature(base64.b64encode(public_key).decode(), base64.b64encode(signature).decode(), message))
-
-locking_script = create_locking_script(public_key_hash)
-# print(len(locking_script))
-
-# to manipulate the unlocking script
-# signature = private_key.sign(message)+b'\x01'
-# public_key = public_key+b'\x01'
-
-unlocking_script= create_unlocking_script(signature, public_key)
-
-# Validate the scripts
-valid = validate_script(locking_script, unlocking_script, message)
-print("Script is valid:", valid)
+if __name__ == "__main__":
+    main()

@@ -151,5 +151,10 @@ def mix(msg, secret):
         newMsg = newMsg + "0" + remaining[i]
     return newMsg
 
-message = "hello"
-print(hash(message))
+def main():
+    message = "hello"
+    print("Message: ", message)
+    print("Message hash: ", hash(message))
+
+if __name__ == "__main__":
+    main()
