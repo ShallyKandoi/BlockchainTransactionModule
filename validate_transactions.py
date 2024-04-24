@@ -55,12 +55,6 @@ initial_state_of_economy = {
     "receiver_public_key_hash": "hash_of_receiver_public_key",
 }
 
-def generate_public_key_hash(public_key):
-    # Step 2: Hash the public key (SHA-256 followed by RIPEMD-160)
-    sha256_hash = hashlib.sha256(public_key).digest()
-    ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
-    return ripemd160_hash
-
 
 # Generate a private key
 receiver_private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
@@ -74,7 +68,7 @@ message = b"Hello, world!"
 # Sign the message
 receiver_signature = receiver_private_key.sign(message)
 
-receiver_public_key_hash= generate_public_key_hash(receiver_public_key)
+receiver_public_key_hash= generate_public_key_hash(str(receiver_public_key))
 
 # Create a transaction
 sender_public_key = "sender_public_key"

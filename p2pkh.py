@@ -1,6 +1,7 @@
 import ecdsa
 import hashlib
 import base64
+from custom_hash_func import hash
 
 def validate_signature(public_key, signature, message):
     """Verifies if the signature is correct. This is used to prove
@@ -84,8 +85,13 @@ def validate_script(locking_script, unlocking_script, message):
                 # print(2)
                 return False
             item = stack.pop()
-            hash_item = hashlib.new('ripemd160', hashlib.sha256(item).digest()).digest()
-            stack.append(hash_item)
+            hash_item = hash(str(item))
+            # Use hashlib.new with 'ripemd160' to hash the byte representation
+            ripemd160_hash = hashlib.new('ripemd160', hash_item.encode('utf-8')).digest()
+            stack.append(ripemd160_hash)
+            # print("Hashed item pushed:",ripemd160_hash.hex())
+            # hash_item = hashlib.new('ripemd160', hashlib.sha256(item).digest()).digest()
+            # stack.append(hash_item)
         elif opcode == 0x14:  # Push 20 bytes (OP_PUSHDATA1)
             # Extract next 20 bytes as public key hash
             # public_key_hash = locking_script[i:i + 20].hex()
@@ -174,8 +180,11 @@ def create_locking_script(public_key_hash):
 
 def generate_public_key_hash(public_key):
     # Step 2: Hash the public key (SHA-256 followed by RIPEMD-160)
-    sha256_hash = hashlib.sha256(public_key).digest()
-    ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
+    # Use hashlib.new with 'ripemd160' to hash the byte representation
+    # sha256_hash = hashlib.sha256(public_key).digest()
+    # ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
+    custom_hash_output = hash(public_key)
+    ripemd160_hash = hashlib.new('ripemd160', custom_hash_output.encode('utf-8')).digest()
     return ripemd160_hash
 
 
@@ -191,7 +200,7 @@ message = b"Hello, world!"
 # Sign the message
 signature = private_key.sign(message)
 
-public_key_hash= generate_public_key_hash(public_key)
+public_key_hash= generate_public_key_hash(str(public_key))
 
 # Print the signature and public key
 print("Signature:", signature.hex())
