@@ -2,6 +2,9 @@ import ecdsa
 import hashlib
 import base64
 
+# Create a message to sign
+message = b"Hello, world!"
+
 def validate_signature(public_key, signature, message):
     """Verifies if the signature is correct. This is used to prove
     it's you (and not someone else) trying to do a transaction with your
@@ -82,34 +85,37 @@ def create_locking_script(public_key):
 
     return locking_script
 
+def main():
+    # Generate a private key
+    private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
 
-# Generate a private key
-private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
+    # Get the corresponding public key
+    public_key = private_key.verifying_key.to_string()
 
-# Get the corresponding public key
-public_key = private_key.verifying_key.to_string()
+    # Sign the message
+    signature = private_key.sign(message)
 
-# Create a message to sign
-message = b"Hello, world!"
+    # Print the signature and public key
+    print("Private Key:", private_key.to_string().hex())
+    print("Signature:", signature.hex())
+    print("Public Key:", public_key.hex())
 
-# Sign the message
-signature = private_key.sign(message)
+    # Call the validate_signature function
+    # print(validate_signature(base64.b64encode(public_key).decode(), base64.b64encode(signature).decode(), message))
 
-# Print the signature and public key
-print("Signature:", signature.hex())
-print("Public Key:", public_key.hex())
+    locking_script = create_locking_script(public_key)
+    print("\nLocking Script:", locking_script.hex())
+    # print(len(locking_script))
 
-# Call the validate_signature function
-# print(validate_signature(base64.b64encode(public_key).decode(), base64.b64encode(signature).decode(), message))
+    # to manipulate the unlocking script
+    # signature = private_key.sign(message)+b'\x01'
 
-locking_script = create_locking_script(public_key)
-# print(len(locking_script))
+    unlocking_script= create_unlocking_script(signature)
+    print("Unlocking Script:", unlocking_script.hex())
 
-# to manipulate the unlocking script
-# signature = private_key.sign(message)+b'\x01'
+    # Validate the scripts
+    valid = validate_script(locking_script, unlocking_script, message)
+    print("\nScript is valid:", valid)
 
-unlocking_script= create_unlocking_script(signature)
-
-# Validate the scripts
-valid = validate_script(locking_script, unlocking_script, message)
-print("Script is valid:", valid)
+if __name__ == "__main__":
+    main()
