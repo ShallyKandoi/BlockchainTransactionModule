@@ -1,7 +1,8 @@
 import ecdsa
-import hashlib
+# import hashlib
 import base64
 from custom_hash_func import hash
+from ripemd import calc_ripemd160
 
 # Create a message to sign
 message = b"Hello, world!"
@@ -19,32 +20,37 @@ def generate_key_pair():
 
     # Generate the public key hash
     public_key_hash = generate_public_key_hash(str(public_key))
-
     return private_key, public_key, signature, public_key_hash
-
-
+    
 def validate_signature(public_key, signature, message):
     """Verifies if the signature is correct. This is used to prove
     it's you (and not someone else) trying to do a transaction with your
     address. Called when a user tries to submit a new transaction.
     """
-    # Decode public key and signature from base64
-    public_key_bytes = base64.b64decode(public_key)
-    signature_bytes = base64.b64decode(signature)
-    
-    # Convert public key bytes to hex
-    public_key_hex = public_key_bytes.hex()
-
     try:
+        # Decode public key and signature from base64
+        public_key_bytes = base64.b64decode(public_key)
+        signature_bytes = base64.b64decode(signature)
+        
+        # Convert public key bytes to hex
+        public_key_hex = public_key_bytes.hex()
+
         # Initialize verifying key
         vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key_hex), curve=ecdsa.SECP256k1)
         
         # Verify signature
-        return vk.verify(signature_bytes, message)
-    except (ValueError, ecdsa.BadSignatureError) as e:
-        # Handle specific exceptions
-        print("Signature verification failed:", e)
+        if vk.verify(signature_bytes, message):
+            return True
+        else:
+            print("Signature verification failed: Signature is invalid.")
+            return False
+    except ValueError:
+        print("Signature verification failed: Invalid public key or signature format.")
         return False
+    except ecdsa.BadSignatureError:
+        print("Signature verification failed: Bad signature.")
+        return False
+
     
 
 def parse_locking_script(locking_script):
@@ -78,7 +84,7 @@ def parse_unlocking_script(unlocking_script):
 
 def validate_script(locking_script, unlocking_script, message):
     parsed_components = parse_locking_script(locking_script)
-    print("\nParsed components from locking_script: ", parsed_components)
+    # print("\nParsed components from locking_script: ", parsed_components)
 
     signature, public_key = parse_unlocking_script(unlocking_script)
     # print("Signature:", signature.hex())
@@ -97,22 +103,23 @@ def validate_script(locking_script, unlocking_script, message):
         i += 1
         if opcode == 0x76:  # OP_DUP
             if len(stack) < 1:
-                # print(1)
                 return False
             stack.append(stack[-1])
         elif opcode == 0xa9:  # OP_HASH160
             if len(stack) < 1:
-                # print(2)
                 return False
             item = stack.pop()
             hash_item = hash(str(item))
-            # Use hashlib.new with 'ripemd160' to hash the byte representation
-            ripemd160_hash = hashlib.new('ripemd160', hash_item.encode('utf-8')).digest()
+            ripemd160_hash = calc_ripemd160(hash_item)
+            
             stack.append(ripemd160_hash)
             # print("Hashed item pushed:",ripemd160_hash.hex())
 
             # hash_item = hashlib.new('ripemd160', hashlib.sha256(item).digest()).digest()
+            ## Use hashlib.new with 'ripemd160' to hash the byte representation
+            # ripemd160_hash = hashlib.new('ripemd160', hash_item.encode('utf-8')).digest()
             # stack.append(hash_item)
+
         elif opcode == 0x14:  # Push 20 bytes (OP_PUSHDATA1)
             # Extract next 20 bytes as public key hash
             public_key_hash = locking_script[i:i + 20]
@@ -120,37 +127,34 @@ def validate_script(locking_script, unlocking_script, message):
             i += 20
         elif opcode == 0x88:  # OP_EQUALVERIFY
             if len(stack) < 2:
-                # print(3)
                 return False
             item1 = stack.pop()
             item2 = stack.pop()
-            if item1 != item2:
-                # print(4)
+            # print("item1 :",item1.hex())
+            # print("item2 :",item2)
+
+            # if item1 != item2:
+            if item1.hex() != item2:
                 return False
         elif opcode == 0xac:  # OP_CHECKSIG
             # print(stack)
             if len(stack) < 2:
-                # print(5)
                 return False
             # Signature verification
             public_key = stack.pop()
             signature = stack.pop()
             if not validate_signature(base64.b64encode(public_key).decode(), base64.b64encode(signature).decode(), message):
-                # print(6)
                 return False
             stack.append(True)
         else:
             # Unknown opcode
-            # print(7)
             return False
 
     # print(stack)
 
     if len(stack) == 1 and stack[-1] == True:
-    # if stack.empty():
         return True
     else:
-        # print(8)
         return False
 
 
@@ -193,7 +197,7 @@ def create_locking_script(public_key_hash):
     # OP_EQUALVERIFY (0x88): Ensures the top two stack items are equal and removes them
     # OP_CHECKSIG (0xac): Verifies the signature of the input data
 
-    locking_script = bytes.fromhex(f"76a914{public_key_hash.hex()}88ac")
+    locking_script = bytes.fromhex(f"76a914{public_key_hash}88ac")
     return locking_script
 
 
@@ -205,7 +209,8 @@ def generate_public_key_hash(public_key):
     # ripemd160_hash = hashlib.new('ripemd160', sha256_hash).digest()
 
     custom_hash_output = hash(public_key)
-    ripemd160_hash = hashlib.new('ripemd160', custom_hash_output.encode('utf-8')).digest()
+    ripemd160_hash = calc_ripemd160(custom_hash_output)
+    # ripemd160_hash = hashlib.new('ripemd160', custom_hash_output.encode('utf-8')).digest()
     return ripemd160_hash
 
 
@@ -216,7 +221,8 @@ def main():
     print("Private Key:", private_key.to_string().hex())
     print("Signature:", signature.hex())
     print("Public Key:", public_key.hex())
-    print("Public Key Hash:", public_key_hash.hex())
+    # print("Public Key Hash:", public_key_hash.hex())
+    print("Public Key Hash:", public_key_hash)
 
     locking_script = create_locking_script(public_key_hash)
     print("\nLocking Script: ", locking_script.hex())
