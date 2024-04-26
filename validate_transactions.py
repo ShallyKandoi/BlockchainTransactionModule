@@ -49,10 +49,11 @@ class TransactionPool:
         self.validate_transactions()
 
     def validate_transactions(self):
-        self.valid_transactions=[]
-        for transaction in self.transactions:
-            if transaction.is_valid(self.valid_transactions):
-                self.valid_transactions.append(transaction)
+        if self.transactions[-1].is_valid(self.valid_transactions):
+            self.valid_transactions.append(transaction)
+            print("\nTransaction is valid and added to set of valid transactions")
+        else:
+            print("\nTransaction is not valid")
 
     def get_balance(self,user):
         amt=user.initial_money
@@ -95,15 +96,15 @@ print(user5.name,":",user5.initial_money)
 transaction_pool = TransactionPool()
 
 while 1:
-    print("1. Send money")
+    print("\n1. Send money")
     print("2. Exit")
     user_input = int(input("Enter [1/2]: "))
     if user_input==1:
-        input1,input2,amt=input("Enter sender,receiver,amount: ").split()
+        input1,input2,amt=input("\nEnter sender,receiver,amount: ").split()
         amt=int(amt)
         transaction=Transaction(mapping[input1],mapping[input2],amt)
         transaction_pool.add_transaction(transaction)
-        print("Current state of economy:")
+        print("\nCurrent state of economy:")
         print(user1.name,":",transaction_pool.get_balance(user1))
         print(user2.name,":",transaction_pool.get_balance(user2))
         print(user3.name,":",transaction_pool.get_balance(user3))
