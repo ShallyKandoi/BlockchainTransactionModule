@@ -1,5 +1,4 @@
 import ecdsa
-import hashlib
 import base64
 
 # Create a message to sign
@@ -37,7 +36,6 @@ def validate_script(locking_script, unlocking_script, message):
     public_key = locking_script[1:1 + public_key_length]
     # print(public_key.hex())
 
-    # print(locking_script[1 + public_key_length:].hex())
     if int(locking_script[1 + public_key_length:].hex(), 16) != 0xac:  # OP_CHECKSIG
         print(1)
         return False    
@@ -99,9 +97,6 @@ def main():
     print("Private Key:", private_key.to_string().hex())
     print("Signature:", signature.hex())
     print("Public Key:", public_key.hex())
-
-    # Call the validate_signature function
-    # print(validate_signature(base64.b64encode(public_key).decode(), base64.b64encode(signature).decode(), message))
 
     locking_script = create_locking_script(public_key)
     print("\nLocking Script:", locking_script.hex())

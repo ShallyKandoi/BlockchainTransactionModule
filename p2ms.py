@@ -1,5 +1,4 @@
 import ecdsa
-import hashlib
 import base64
 import random
 
@@ -21,8 +20,8 @@ def generate_multisig_locking_script(num_signatures, public_keys):
         raise ValueError("Invalid number of signatures")
 
     # Construct multisig locking script
-    opcode_m = bytes([80 + num_signatures])  # OP_1 through OP_16
-    opcode_n = bytes([80 + len(public_keys)])  # OP_1 through OP_16
+    opcode_m = bytes([80 + num_signatures])  
+    opcode_n = bytes([80 + len(public_keys)])  
     public_keys_bytes = b"".join([len(key).to_bytes(1, 'big') + key for key in public_keys])
     locking_script_bytes =  b"".join([opcode_m, public_keys_bytes, opcode_n, b"\xae"])  # OP_CHECKMULTISIG
     return locking_script_bytes
@@ -58,17 +57,14 @@ def validate_signature(public_key, signature, message):
         vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key_hex), curve=ecdsa.SECP256k1)
         
         # Verify signature
-        # print(1,end='\n')
         return vk.verify(signature_bytes, message)
     except (ValueError, ecdsa.BadSignatureError) as e:
         # Handle specific exceptions
         # print("Signature verification failed:", e)
-        # print(2,end='\n')
         return False
 
 def parse_locking_script(locking_script):
     components = []
-    # components['m'] = locking_script[0] - 80  # Convert OP_1 through OP_16 to integer m
     components.append(locking_script[0] - 80)
     public_keys = []
     i = 1
@@ -79,16 +75,12 @@ def parse_locking_script(locking_script):
         i += 1
         if i + key_length > len(locking_script):
             raise ValueError("Invalid locking script format: Key length exceeds script length")
-        # public_keys.append(locking_script[i:i + key_length])
         public_keys.append(locking_script[i:i + key_length].hex())
         i += key_length
-    # components['public_keys'] = public_keys
     components += public_keys
-    # components.append(public_keys)
-    # components['n'] = locking_script[i] - 80  # Number of public keys
     components.append(locking_script[i] - 80)
-    # components['checkmultisig_opcode'] = locking_script[i + 1]  # OP_CHECKMULTISIG opcode
-    components.append('OP_CHECKMULTISIG')
+    if locking_script[i+1] == 0xae:  # OP_CHECKMULTISIG opcode
+        components.append('OP_CHECKMULTISIG')
     return components
 
 def parse_unlocking_script(unlocking_script):
@@ -125,7 +117,6 @@ def validate_multisig_script(locking_script, unlocking_script, message):
     # print("Stack: ",stack)
 
     if not checkMultiSig:
-        # print(1,end='\n')
         return False
     
     pubkeys = []
@@ -133,37 +124,29 @@ def validate_multisig_script(locking_script, unlocking_script, message):
     
     if checkMultiSig:
         if not isinstance(stack[-1], int):
-            # print(2,end='\n')
             return False
         num_pub_keys = stack.pop()
         for i in range(num_pub_keys):
             if not isinstance(stack[-1], str):
-                # print(3,end='\n')
                 return False
             pubkeys.append(bytes.fromhex(stack.pop()))
         if not isinstance(stack[-1], int):
-            # print(4,end='\n')
             return False
         num_signatures_required = stack.pop()
         if len(stack) != num_signatures_required:
-            # print(5,end='\n')
             return False
         for i in range(num_signatures_required):
             if not isinstance(stack[-1], str):
-                # print(6,end='\n')
                 return False
             signatures.append(bytes.fromhex(stack.pop()))
         if len(stack) != 0:
-            # print(7,end='\n')
             return False
 
     if num_signatures_required > num_pub_keys:
-        # print(8,end='\n')
         return False  # More signatures than public keys, invalid
     
     # Ensure all signatures and their corresponding public keys are distinct
     if len(set(signatures)) != num_signatures_required or len(set(pubkeys)) != num_pub_keys:
-        # print(9,end='\n')
         return False
     
     matched_pairs = set()  # Store matched pairs of signature and public key indices
@@ -172,9 +155,6 @@ def validate_multisig_script(locking_script, unlocking_script, message):
     for sig_index, sig in enumerate(signatures):
         for pubkey_index in range(last_matched_pubkey_index + 1, len(pubkeys)):
             pubkey = pubkeys[pubkey_index]
-        # for pubkey_index, pubkey in enumerate(pubkeys):
-            # if (sig_index, pubkey_index) in matched_pairs:
-                # continue  # Skip if this pair is already matched
             if validate_signature(base64.b64encode(pubkey).decode(), base64.b64encode(sig).decode(), message):
                 print("\nSignature verified {}: {}".format(sig_index+1, sig.hex()))
                 print("Corresponding Public key: ", pubkey.hex())
@@ -182,8 +162,8 @@ def validate_multisig_script(locking_script, unlocking_script, message):
                 last_matched_pubkey_index = pubkey_index # Update index of last matched public key
                 break
         
-    # print(10,end='\n')
     if len(matched_pairs) == num_signatures_required:
+        print("\nRequired number of signatures verified")
         return True
     else:
         print("\nSignature verification failed")
@@ -201,8 +181,6 @@ def main():
         num_pubkeys_lock = int(input("Enter the number of public keys required to lock: "))
         if num_pubkeys_lock <= 0:
             raise ValueError("Number of public keys required to lock must be positive")
-
-        # message = b"Hello, world!"
 
         print("\n")
 
@@ -236,13 +214,15 @@ def main():
 
         # Unlocking script
         unlocking_script = generate_multisig_unlocking_script(selected_signatures)
+
         # to manipulate the unlocking script
         # unlocking_script = generate_multisig_unlocking_script(selected_signatures)+b'\x01'
+
         print("\nUnlocking Script:", unlocking_script.hex())
 
-        # Validate the scripts (placeholder)
+        # Validate the scripts 
         valid = validate_multisig_script(locking_script, unlocking_script, message)
-        print("\nScript is valid:", valid)
+        print("Script is valid:", valid)
 
     except ValueError as e:
         print("Error:", e)

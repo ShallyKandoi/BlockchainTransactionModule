@@ -1,10 +1,3 @@
-import ecdsa
-import hashlib
-from ecdsa.util import sigdecode_der
-from ecdsa.keys import VerifyingKey
-from ecdsa.curves import SECP256k1
-from ecdsa import der
-import base64
 import struct
 
 def left_rotate(n, b):
