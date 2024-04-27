@@ -43,5 +43,5 @@ In all the 3 scripts, the following things should be taken into account:
 We have used the following hash function to cryptographically hash the public key used for our P2PKH script: RIPEMD-160
 
 -   RIPEMD-160 (RACE Integrity Primitives Evaluation Message Digest) is a cryptographic hash function designed to produce a 160-bit (20-byte) hash value.
--   How to run the file: `python ripemd.py`
+-   How to run the file: `python hash_function.py`
 -   If you need to hash some message/key, it is to be provided in the main in the `data` variable.
