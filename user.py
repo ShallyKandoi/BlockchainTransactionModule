@@ -1,4 +1,3 @@
-import random
 import ecdsa
 
 class User:
