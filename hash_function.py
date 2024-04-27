@@ -13,7 +13,7 @@ def alignment(msg):
 
 # Defining the Constants and functions for the round calculations used in the hash function in the specified manner.
 
-# The F function defines the logical functions used in the SHA-1 algorithm
+# The F function defines the logical functions used in the algorithm
 def F(j, x, y, z):
     if j < 16:	
         return (x ^ y ^ z)
@@ -26,7 +26,7 @@ def F(j, x, y, z):
     if j < 80:
         return (x ^ (y | ~z))		
 
-# Constants used in the SHA-1 algorithm
+# Constants used in the algorithm
 def K(j):
     if j < 16:
         return 0x00000000	
@@ -39,7 +39,7 @@ def K(j):
     if j < 80:
         return 0xA953FD4E
 
-# Additional constants used in the SHA-1 algorithm
+# Additional constants used in the algorithm
 def K1(j):
     if j < 16:
         return 0x50A28BE6
