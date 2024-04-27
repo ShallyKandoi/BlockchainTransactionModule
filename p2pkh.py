@@ -121,7 +121,7 @@ def validate_script(locking_script, unlocking_script, message):
     - bool: True if the script is valid, False otherwise.
     """
     parsed_components = parse_locking_script(locking_script)
-    # print("\nParsed components from locking_script: ", parsed_components)
+    print("\nParsed components from locking_script: ", parsed_components)
 
     signature, public_key = parse_unlocking_script(unlocking_script)
     # print("\nSignature:", signature.hex())
@@ -135,6 +135,18 @@ def validate_script(locking_script, unlocking_script, message):
     i = 0
     while i < len(locking_script):
         # print("\nCurrent Stack View: ",stack)
+        print("\nCurrent Stack View: ")  # Print items in hexadecimal format
+        # Create an iterator for the stack
+        stack_iterator = reversed(stack)
+
+        # Iterate through the stack
+        for element in stack_iterator:
+            if element==signature:
+                print("SIGNATURE : ",element.hex())
+            if element.hex()==parsed_components[2]:
+                print("PUBLIC KEY HASH : ",element.hex())
+            if element==public_key:
+                print("PUBLIC KEY : ",element.hex())
         opcode = locking_script[i]
         i += 1
         if opcode == 0x76:  # OP_DUP
@@ -183,7 +195,7 @@ def validate_script(locking_script, unlocking_script, message):
             # Unknown opcode
             return False
 
-    # print("\nCurrent Stack View: ",stack)
+    print("\nCurrent Stack View: ",stack)
 
     if len(stack) == 1 and stack[-1] == True:
         return True
