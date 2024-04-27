@@ -16,10 +16,13 @@ class User:
         return self.private_key.verifying_key.to_string()
     
     def get_money(self):
+        # Returns the initial balance
         return self.initial_money
     
     def get_private_key(self):
+        # Returns the private key
         return self.private_key
     
     def get_public_key(self):
+        # Returns the public key
         return self.public_key
