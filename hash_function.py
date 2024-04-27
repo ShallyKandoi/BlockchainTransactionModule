@@ -138,7 +138,6 @@ def rounds(buf, x):
     buf[3] = (buf[4] + A + B1)  
     buf[4] = (buf[0] + B + C1) 
     buf[0] = T	
-	
     return buf
    
 def calc_hash(data):
