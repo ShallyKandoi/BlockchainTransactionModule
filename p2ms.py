@@ -17,11 +17,11 @@ def generate_multisig_locking_script(num_signatures, public_keys):
     - bytes: The locking script bytes.
     """
     if num_signatures <= 0 or num_signatures > len(public_keys):
-        raise ValueError("Invalid number of signatures")
+        raise ValueError("\nInvalid number of signatures")
 
     # Construct multisig locking script
-    opcode_m = bytes([80 + num_signatures])  
-    opcode_n = bytes([80 + len(public_keys)])  
+    opcode_m = bytes([80 + num_signatures])     # OP_1 to OP_16
+    opcode_n = bytes([80 + len(public_keys)])   # OP_1 to OP_16
     public_keys_bytes = b"".join([len(key).to_bytes(1, 'big') + key for key in public_keys])
     locking_script_bytes =  b"".join([opcode_m, public_keys_bytes, opcode_n, b"\xae"])  # OP_CHECKMULTISIG
     return locking_script_bytes
@@ -60,10 +60,19 @@ def validate_signature(public_key, signature, message):
         return vk.verify(signature_bytes, message)
     except (ValueError, ecdsa.BadSignatureError) as e:
         # Handle specific exceptions
-        # print("Signature verification failed:", e)
+        print("\nSignature verification failed:", e)
         return False
 
 def parse_locking_script(locking_script):
+    """
+    Parses the components of a locking script (ScriptPubKey) for a P2MS transaction.
+
+    Parameters:
+    - locking_script (bytes): The locking script bytes.
+
+    Returns:
+    - list: List of components extracted from the locking script.
+    """
     components = []
     components.append(locking_script[0] - 80)
     public_keys = []
@@ -74,7 +83,7 @@ def parse_locking_script(locking_script):
         key_length = locking_script[i]
         i += 1
         if i + key_length > len(locking_script):
-            raise ValueError("Invalid locking script format: Key length exceeds script length")
+            raise ValueError("\nInvalid locking script format: Key length exceeds script length")
         public_keys.append(locking_script[i:i + key_length].hex())
         i += key_length
     components += public_keys
@@ -84,6 +93,15 @@ def parse_locking_script(locking_script):
     return components
 
 def parse_unlocking_script(unlocking_script):
+    """
+    Parses the components of an unlocking script (ScriptSig) for a P2MS transaction.
+
+    Parameters:
+    - unlocking_script (bytes): The unlocking script bytes.
+
+    Returns:
+    - list: List of signatures extracted from the unlocking script.
+    """
     # num_signatures = unlocking_script[0]
     sigs = []
     i = 1
@@ -92,10 +110,20 @@ def parse_unlocking_script(unlocking_script):
         sig = unlocking_script[i + 1: i + 1 + sig_length]
         sigs.append(sig.hex())
         i += sig_length + 1
-    # return num_signatures, sigs
     return sigs
 
 def validate_multisig_script(locking_script, unlocking_script, message):
+    """
+    Validates the unlocking script against the locking script for a P2MS transaction.
+
+    Parameters:
+    - locking_script (bytes): The locking script bytes.
+    - unlocking_script (bytes): The unlocking script bytes.
+    - message (bytes): The message to be signed.
+
+    Returns:
+    - bool: True if the scripts are valid, False otherwise.
+    """
     components = parse_locking_script(locking_script)
     print("\nParsed components from Locking Script: ", components)
 
@@ -109,12 +137,13 @@ def validate_multisig_script(locking_script, unlocking_script, message):
 
     checkMultiSig = False
     for i in range(len(components)):
+
+        print("\n Current Stack View: ",stack)
+
         if components[i] == 'OP_CHECKMULTISIG':
             checkMultiSig = True
             break
         stack.append(components[i])
-        
-    # print("Stack: ",stack)
 
     if not checkMultiSig:
         return False
@@ -173,14 +202,14 @@ def validate_multisig_script(locking_script, unlocking_script, message):
 def main():
     try:
         # Prompt user for the number of required signatures
-        num_signatures = int(input("Enter the number of required signatures: "))
+        num_signatures = int(input("\nEnter the number of required signatures: "))
         if num_signatures <= 0:
-            raise ValueError("Number of required signatures must be positive")
+            raise ValueError("\nNumber of required signatures must be positive")
 
         # Prompt user for the number of public keys required to lock
         num_pubkeys_lock = int(input("Enter the number of public keys required to lock: "))
         if num_pubkeys_lock <= 0:
-            raise ValueError("Number of public keys required to lock must be positive")
+            raise ValueError("\nNumber of public keys required to lock must be positive")
 
         print("\n")
 
@@ -193,11 +222,13 @@ def main():
             print("Public Key [{}]: {}".format(idx+1, public_key.hex()))
             public_keys.append(public_key)
 
-            # to manipulate the unlocking script
-            # signature = private_key.sign(message)+b'\x01'
-
             signature = private_key.sign(message)
             print("Signature [{}]: {}".format(idx+1, signature.hex()))
+
+            # # to manipulate the unlocking script
+            # signature = signature + b'\x01'
+            # signature = b"\x00" * 64  # Change to an incorrect value
+
             signatures.append(signature)
 
          # Randomly select num_signatures from the set of all signatures
@@ -206,7 +237,7 @@ def main():
         print("\nSelected Signature Indices:", selected_signatures_indices)
         selected_signatures = [signatures[i] for i in selected_signatures_indices]
         selected_signatures_hex = [signature.hex() for signature in selected_signatures]
-        # print("Selected Signatures:", selected_signatures_hex)
+        # print("\nSelected Signatures:", selected_signatures_hex)
 
         # Locking script
         locking_script = generate_multisig_locking_script(num_signatures, public_keys)
@@ -215,17 +246,17 @@ def main():
         # Unlocking script
         unlocking_script = generate_multisig_unlocking_script(selected_signatures)
 
-        # to manipulate the unlocking script
+        # # to manipulate the unlocking script
         # unlocking_script = generate_multisig_unlocking_script(selected_signatures)+b'\x01'
 
         print("\nUnlocking Script:", unlocking_script.hex())
 
         # Validate the scripts 
         valid = validate_multisig_script(locking_script, unlocking_script, message)
-        print("Script is valid:", valid)
+        print("\nScript is valid:", valid)
 
     except ValueError as e:
-        print("Error:", e)
+        print("\nError:", e)
 
 if __name__ == "__main__":
     main()

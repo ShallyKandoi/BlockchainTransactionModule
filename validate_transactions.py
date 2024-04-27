@@ -1,6 +1,3 @@
-import hashlib
-import ecdsa
-
 from p2pkh import validate_signature,parse_locking_script,parse_unlocking_script,validate_script,create_unlocking_script,create_locking_script,generate_public_key_hash
 from user import User
 

@@ -133,7 +133,7 @@ def rounds(buf, x):
 	
     return buf
    
-def calc_ripemd160(data):
+def calc_hash(data):
     data = [ord(i) for i in data]
 	
     data = alignment(data)
@@ -153,7 +153,6 @@ def calc_ripemd160(data):
         data_words.append(q)
 	
     for i in range(0, len(data_words), 16):
-	    # i-ый блок заносится в х 
         x = data_words[i:i+16]
         buf = rounds(buf, x)
 			
@@ -167,8 +166,8 @@ def calc_ripemd160(data):
 def main():
     data = "hello"
     print("Message: ", data)
-    res = calc_ripemd160(data)
-    print("Message ripemd-160 hash: ", res)
+    res = calc_hash(data)
+    print("Message hash: ", res)
 	
 if __name__ == "__main__":
     main()	
