@@ -56,11 +56,11 @@ class TransactionPool:
 
 
 # Create different users
-name1="SHALLY"
-name2="SHIVAM"
-name3="PAKHARIYA"
-name4="RAJ"
-name5="ROHIT"
+name1="A"
+name2="B"
+name3="C"
+name4="D"
+name5="E"
 
 user1=User(name1,100)
 user2=User(name2,30)
